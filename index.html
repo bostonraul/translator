@@ -115,86 +115,86 @@
 </head>
 <body>
 
-    <header>My Quick Translator</header>
+<header>My Quick Translator</header>
 
-    <div class="controls">
-        <label style="align-self: center; font-size: 0.9rem; color: #555;">Translate to:</label>
-        <select id="languageSelect">
-            <option value="ml">Malayalam</option>
-            <option value="te">Telugu</option>
-        </select>
+<div class="controls">
+    <label style="align-self: center; font-size: 0.9rem; color: #555;">Translate to:</label>
+    <select id="languageSelect">
+        <option value="ml">Malayalam</option>
+        <option value="te">Telugu</option>
+    </select>
+</div>
+
+<div class="chat-container" id="chatContainer">
+    <div class="message bot-message">
+        <div class="translation-text">Type any English sentence below!</div>
+        <div class="subtext">(I am ready to translate for you)</div>
     </div>
+</div>
 
-    <div class="chat-container" id="chatContainer">
-        <div class="message bot-message">
-            <div class="translation-text">Type any English sentence below!</div>
-            <div class="subtext">(Njan thayaaraanu / Nenu siddhanga unnanu)</div>
-        </div>
-    </div>
+<div class="input-area">
+    <input type="text" id="userInput" placeholder="Type English here..." autocomplete="off">
+    <button onclick="handleSend()">Send</button>
+</div>
 
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Type English here..." autocomplete="off">
-        <button onclick="handleSend()">Send</button>
-    </div>
+<script>
+    const chatContainer = document.getElementById('chatContainer');
+    const userInput = document.getElementById('userInput');
+    const languageSelect = document.getElementById('languageSelect');
 
-    <script>
-        const chatContainer = document.getElementById('chatContainer');
-        const userInput = document.getElementById('userInput');
-        const languageSelect = document.getElementById('languageSelect');
+    userInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") handleSend();
+    });
 
-        userInput.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                handleSend();
-            }
-        });
+    async function handleSend() {
+        const text = userInput.value.trim();
+        if (!text) return;
 
-        async function handleSend() {
-            const text = userInput.value.trim();
-            if (!text) return;
+        appendMessage(text, 'user-message');
+        userInput.value = '';
 
-            appendMessage(text, 'user-message');
-            userInput.value = '';
+        const selectedLang = languageSelect.value;
+        const loadingId = appendMessage("Translating...", 'bot-message');
+        const targetBotMsg = document.getElementById(loadingId);
 
-            const selectedLang = languageSelect.value;
+        try {
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${selectedLang}`;
 
-            const loadingId = appendMessage("Translating...", 'bot-message');
-            const targetBotMsg = document.getElementById(loadingId);
+            const response = await fetch(url);
+            const data = await response.json();
 
-            try {
-                // ⚡ FAST & RELIABLE MyMemory API
-                const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${selectedLang}`;
+            let translated = data?.responseData?.translatedText || "";
 
-                const response = await fetch(url);
-                const data = await response.json();
+            // Clean unwanted MyMemory artifacts
+            translated = translated.replace(/&#39;/g, "'").replace(/&quot;/g, '"');
 
-                let translatedText = data?.responseData?.translatedText || "";
-
-                if (translatedText) {
-                    targetBotMsg.innerHTML = `
-                        <div class="translation-text">${translatedText}</div>
-                        <div class="subtext">(${text})</div>
-                    `;
-                } else {
-                    targetBotMsg.innerText = "Could not parse translation.";
-                }
-
-            } catch (error) {
-                targetBotMsg.innerText = "Translation service unavailable right now.";
+            if (!translated || translated.trim().length === 0) {
+                translated = "Couldn't translate that sentence.";
             }
 
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            targetBotMsg.innerHTML = `
+                <div class="translation-text">${translated}</div>
+                <div class="subtext">(${text})</div>
+            `;
+
+        } catch (error) {
+            targetBotMsg.innerText = "Translation service unavailable.";
         }
 
-        function appendMessage(text, className) {
-            const msgDiv = document.createElement('div');
-            const uniqueId = 'msg-' + Date.now();
-            msgDiv.id = uniqueId;
-            msgDiv.className = `message ${className}`;
-            msgDiv.innerText = text;
-            chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return uniqueId;
-        }
-    </script>
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function appendMessage(text, className) {
+        const msgDiv = document.createElement('div');
+        const uniqueId = 'msg-' + Date.now();
+        msgDiv.id = uniqueId;
+        msgDiv.className = `message ${className}`;
+        msgDiv.innerText = text;
+        chatContainer.appendChild(msgDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        return uniqueId;
+    }
+</script>
+
 </body>
 </html>
