@@ -120,15 +120,15 @@
     <div class="controls">
         <label style="align-self: center; font-size: 0.9rem; color: #555;">Translate to:</label>
         <select id="languageSelect">
-            <option value="malayalam">Malayalam (Manglish)</option>
-            <option value="telugu">Telugu (English Text)</option>
+            <option value="ml">Malayalam</option>
+            <option value="te">Telugu</option>
         </select>
     </div>
 
     <div class="chat-container" id="chatContainer">
         <div class="message bot-message">
-            <div class="translation-text">Njan thayaaraanu! Type cheyyu.</div>
-            <div class="subtext">(I am ready! Type something.)</div>
+            <div class="translation-text">Type any English sentence below!</div>
+            <div class="subtext">(Njan thayaaraanu / Nenu siddhanga unnanu)</div>
         </div>
     </div>
 
@@ -138,34 +138,10 @@
     </div>
 
     <script>
-        // Free client-side translation fallback mapping dictionary for testing basic phrases
-        // Real-world setup uses standard translation API endpoints
-        const localDictionary = {
-            malayalam: {
-                "hello": { trans: "Hello / Namaskaram", sub: "Hello" },
-                "how are you": { trans: "Sugamaano?", sub: "Are you fine?" },
-                "i am fine": { trans: "Enikku sugamaanu.", sub: "I am fine." },
-                "where are you": { trans: "Evideyaanu?", sub: "Where are you?" },
-                "come": { trans: "Varu", sub: "Come" },
-                "in between that period if i come": { trans: "Aa kaalayalavinidayil njan varukayanenkil", sub: "In between that period if I come" },
-                "my vocab is very limited so i manage with that": { trans: "Ente vocabulary valare kuravaanu, athukondu njan ithuvechu manage cheyyunnu.", sub: "My vocabulary is very limited, so I manage with that." }
-            },
-            telugu: {
-                "hello": { trans: "Namaskaram", sub: "Hello" },
-                "how are you": { trans: "Ela unnavu?", sub: "How are you?" },
-                "i am fine": { trans: "Nenu bagunnanu.", sub: "I am fine." },
-                "where are you": { trans: "Ekkada unnavu?", sub: "Where are you?" },
-                "come": { trans: "Ra / Randi", sub: "Come" },
-                "in between that period if i come": { trans: "Aa kaalayalamlo nenu vaste", sub: "In between that period if I come" },
-                "my vocab is very limited so i manage with that": { trans: "Naa vocabulary chala thakkuva, anduke nenu deenthone manage chestunnanu.", sub: "My vocabulary is very limited, so I manage with that." }
-            }
-        };
-
         const chatContainer = document.getElementById('chatContainer');
         const userInput = document.getElementById('userInput');
         const languageSelect = document.getElementById('languageSelect');
 
-        // Allow pressing Enter key to send
         userInput.addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 handleSend();
@@ -184,34 +160,34 @@
             
             // 2. Show Loading placeholder
             const loadingId = appendMessage("Translating...", 'bot-message');
+            const targetBotMsg = document.getElementById(loadingId);
 
             try {
-                // 3. Try fetching live translation from a free dictionary API or fallback
-                const cleanedText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
-                let translation = "";
-                let subtext = `(${text})`;
-
-                if (localDictionary[selectedLang][cleanedText]) {
-                    translation = localDictionary[selectedLang][cleanedText].trans;
-                    subtext = `(${localDictionary[selectedLang][cleanedText].sub})`;
-                } else {
-                    // Simple serverless fetch logic placeholder
-                    // In a live system, you hook a free API key here
-                    if(selectedLang === "malayalam") {
-                        translation = "[Manglish Translation of: " + text + "]";
-                    } else {
-                        translation = "[Telugu English text of: " + text + "]";
-                    }
+                // 3. Call Free Google Translate API endpoint
+                const url = `https://googleapis.com{selectedLang}&dt=t&q=${encodeURIComponent(text)}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Extracting translated text from Google response format
+                let translatedText = "";
+                if (data && data[0]) {
+                    data[0].forEach(row => {
+                        if (row[0]) translatedText += row[0];
+                    });
                 }
 
-                // Update placeholder with data
-                const targetBotMsg = document.getElementById(loadingId);
-                targetBotMsg.innerHTML = `<div class="translation-text">${translation}</div><div class="subtext">${subtext}</div>`;
+                // 4. Update UI with the final result
+                if (translatedText) {
+                    targetBotMsg.innerHTML = `<div class="translation-text">${translatedText}</div><div class="subtext">(${text})</div>`;
+                } else {
+                    targetBotMsg.innerText = "Could not parse translation.";
+                }
+
             } catch (error) {
-                document.getElementById(loadingId).innerText = "Error translating. Please try again.";
+                targetBotMsg.innerText = "Connection error. Make sure you are online.";
             }
 
-            // Scroll down
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
@@ -224,10 +200,6 @@
             chatContainer.appendChild(msgDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return uniqueId;
-            
-            
-            
-            
         }
     </script>
 </body>
