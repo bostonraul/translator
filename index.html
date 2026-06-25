@@ -152,24 +152,21 @@
             const text = userInput.value.trim();
             if (!text) return;
 
-            // 1. Display User Message
             appendMessage(text, 'user-message');
             userInput.value = '';
 
             const selectedLang = languageSelect.value;
-            
-            // 2. Show Loading placeholder
+
             const loadingId = appendMessage("Translating...", 'bot-message');
             const targetBotMsg = document.getElementById(loadingId);
 
             try {
-                // 3. Call Free Google Translate API endpoint
-                const url = `https://googleapis.com{selectedLang}&dt=t&q=${encodeURIComponent(text)}`;
-                
+                // ✅ Correct Google Translate endpoint
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${selectedLang}&dt=t&q=${encodeURIComponent(text)}`;
+
                 const response = await fetch(url);
                 const data = await response.json();
-                
-                // Extracting translated text from Google response format
+
                 let translatedText = "";
                 if (data && data[0]) {
                     data[0].forEach(row => {
@@ -177,15 +174,17 @@
                     });
                 }
 
-                // 4. Update UI with the final result
                 if (translatedText) {
-                    targetBotMsg.innerHTML = `<div class="translation-text">${translatedText}</div><div class="subtext">(${text})</div>`;
+                    targetBotMsg.innerHTML = `
+                        <div class="translation-text">${translatedText}</div>
+                        <div class="subtext">(${text})</div>
+                    `;
                 } else {
                     targetBotMsg.innerText = "Could not parse translation.";
                 }
 
             } catch (error) {
-                targetBotMsg.innerText = "Connection error. Make sure you are online.";
+                targetBotMsg.innerText = "Translation service unavailable right now.";
             }
 
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -204,4 +203,3 @@
     </script>
 </body>
 </html>
-
